@@ -1,0 +1,63 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# EDO: dT/dx = -0.25*(T - 25)
+def f(x, T):
+    return -0.25 * (T - 25)
+
+# Método de Runge-Kutta de cuarto orden
+def runge_kutta_4(f, x0, T0, x_end, h):
+    x_vals = [x0]
+    T_vals = [T0]
+    x = x0
+    T = T0
+
+    while x < x_end:
+        k1 = f(x, T)
+        k2 = f(x + h/2, T + h/2 * k1)
+        k3 = f(x + h/2, T + h/2 * k2)
+        k4 = f(x + h, T + h * k3)
+
+        T += h * (k1 + 2*k2 + 2*k3 + k4) / 6
+        x += h
+
+        x_vals.append(round(x, 4))
+        T_vals.append(T)
+
+    return x_vals, T_vals
+
+# Parámetros
+x0 = 0
+T0 = 100
+x_end = 2
+h = 0.1
+
+# Ejecutar RK4
+x_vals, T_rk4 = runge_kutta_4(f, x0, T0, x_end, h)
+
+# Solución exacta: T(x) = 25 + 75 * e^(-0.25 * x)
+T_exacta = [25 + 75 * np.exp(-0.25 * x) for x in x_vals]
+error_abs = [abs(rk - exact) for rk, exact in zip(T_rk4, T_exacta)]
+
+# Crear tabla en Excel
+df = pd.DataFrame({
+    "x": x_vals,
+    "T (RK4)": T_rk4,
+    "T (Exacta)": T_exacta,
+    "Error absoluto": error_abs
+})
+df.to_excel("tabla_rk4_vs_exacta.xlsx", index=False)
+
+# Graficar
+plt.figure(figsize=(8, 5))
+plt.plot(x_vals, T_rk4, 'bo-', label="RK4")
+plt.plot(x_vals, T_exacta, 'r--', label="Exacta")
+plt.xlabel("x (m)")
+plt.ylabel("Temperatura (°C)")
+plt.title("Comparación: Runge-Kutta 4 vs Solución Exacta")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("transferencia_calor_rk4.png")
+plt.show()
