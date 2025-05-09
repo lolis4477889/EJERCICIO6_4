@@ -1,0 +1,68 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Parámetros del circuito RC
+V = 10        # Voltios
+R = 1000      # Ohmios
+C = 0.001     # Faradios
+
+# EDO: dq/dt = (V - q/C) / R
+def f(t, q):
+    return (V - q / C) / R
+
+# Método RK4
+def runge_kutta_4(f, t0, q0, t_end, h):
+    t_vals = [t0]
+    q_vals = [q0]
+    t = t0
+    q = q0
+
+    while t < t_end:
+        k1 = f(t, q)
+        k2 = f(t + h/2, q + h/2 * k1)
+        k3 = f(t + h/2, q + h/2 * k2)
+        k4 = f(t + h, q + h * k3)
+
+        q += h * (k1 + 2*k2 + 2*k3 + k4) / 6
+        t += h
+
+        t_vals.append(round(t, 4))
+        q_vals.append(q)
+
+    return t_vals, q_vals
+
+# Parámetros de integración
+t0 = 0
+q0 = 0
+t_end = 1
+h = 0.05
+
+# Ejecutar RK4
+t_vals, q_vals = runge_kutta_4(f, t0, q0, t_end, h)
+
+# Solución exacta (opcional): q(t) = CV(1 - exp(-t/RC))
+q_exacta = [C * V * (1 - np.exp(-t / (R * C))) for t in t_vals]
+error_abs = [abs(q_num - q_ex) for q_num, q_ex in zip(q_vals, q_exacta)]
+
+# Guardar resultados en Excel
+df = pd.DataFrame({
+    "t": t_vals,
+    "q (RK4)": q_vals,
+    "q (Exacta)": q_exacta,
+    "Error absoluto": error_abs
+})
+df.to_excel("tabla_carga_RC.xlsx", index=False)
+
+# Graficar
+plt.figure(figsize=(8, 5))
+plt.plot(t_vals, q_vals, 'bo-', label="RK4")
+plt.plot(t_vals, q_exacta, 'r--', label="Solución exacta")
+plt.xlabel("Tiempo t (s)")
+plt.ylabel("Carga q (Coulombs)")
+plt.title("Carga de un Capacitor en un Circuito RC")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.savefig("carga_capacitor_rc.png")
+plt.show()
